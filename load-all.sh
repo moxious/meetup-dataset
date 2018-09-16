@@ -1,4 +1,4 @@
-for f in segments/* ; do
+for f in segments/batch* ; do
  export file=$(echo "file://"`pwd`"/"$f)
  echo "Loading $file"
  cat 02-load.cypher | envsubst | cypher-shell
