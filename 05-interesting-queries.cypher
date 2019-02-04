@@ -1,3 +1,11 @@
+/*
+ * Most popular topics
+ */
+MATCH (g:Group)-[:TOPIC]-(t:Topic)
+RETURN t.name, count(g) as groups
+ORDER BY groups DESC
+limit 100;
+
 /* 
  * Future Richmond Meetups within 10 miles of downtown
  */
