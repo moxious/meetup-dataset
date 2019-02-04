@@ -18,6 +18,16 @@ WHERE
    e.time > datetime()
 RETURN g.name as GroupName, e.name as EventName, e.time as When, v.name as Venue limit 10;
 
+/*
+ * Pick a random topic and show which users attend the most Meetups
+ * in that topic area.
+ */
+MATCH (t:Topic) 
+WITH collect(t) as topics 
+WITH apoc.coll.randomItem(topics) as targetTopic
+MATCH (targetTopic)-[:TOPIC]-(g:Group)-[:HELD]-(e:Event)<-[:EVENT]-(r:RSVP)-[:MEMBER]-(member:Member)
+RETURN targetTopic.name as topic, member.name as member, count(r) as RSVPs
+ORDER BY RSVPs DESC limit 10;
 
 /*
  * Let's go dancing in Manhattan on a particular day.
