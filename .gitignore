@@ -2,3 +2,4 @@ segments/batch*
 grand-stack-starter-master
 node_modules
 queryload*.cypher
+log-benchmark-*.log
