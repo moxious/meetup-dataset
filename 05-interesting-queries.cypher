@@ -82,6 +82,21 @@ WHERE
    e.time > datetime()
 RETURN g.name as GroupName, e.name as EventName, e.time as When, v.name as Venue limit 10;
 
+WITH 
+  rand() * 90 * (CASE WHEN rand() <= 0.5 THEN 1 ELSE -1 END) as randLat,
+  rand() * 90 * (CASE WHEN rand() <= 0.5 THEN 1 ELSE -1 END) as randLon
+WITH point({ latitude: randLat, longitude: randLon }) as randomLocation
+MATCH (v:Venue)-[:NEAR]->(city:City)-[:IN]->(c:Country)
+RETURN 
+    city.name as City, 
+    c.name as Country, 
+    v.name as Venue, 
+    v.location as VenueLocation, 
+    randomLocation as RandomLocation,
+    distance(v.location, randomLocation) as DistanceInMeters
+ORDER BY distance(v.location, randomLocation) ASC
+LIMIT 1;
+
 /*
  * Pick a random topic and show which users attend the most Meetups
  * in that topic area.
