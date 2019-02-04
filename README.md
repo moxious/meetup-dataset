@@ -10,7 +10,7 @@ analyses in Neo4j
 To fetch data from the RSVP stream, it's this easy:
 
 ```
-curl -i https://www.meetup.com/meetup_api/docs/stream/2/rsvps/ > meetup.raw
+curl -i https://stream.meetup.com/2/rsvps > meetup.raw
 ```
 
 Let that run as long as you like.  Volume is something like a handful (< 12) a second is what I typically see.
