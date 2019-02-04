@@ -6,6 +6,70 @@ RETURN t.name, count(g) as groups
 ORDER BY groups DESC
 limit 100;
 
+/**
+ * Who brings the most guests?
+ */
+MATCH (r:RSVP)-[:MEMBER]->(m:Member)
+WHERE r.guests > 5
+RETURN m.name, sum(r.guests) as totalGuests
+ORDER BY totalGuests DESC limit 10;
+
+/**
+ * Which venue hosts the most meetups?
+ */
+MATCH (v:Venue)<-[:LOCATED_AT]-(e:Event)
+WHERE v.name is not null
+RETURN v.name, v.location, count(e) as events
+ORDER BY events desc 
+limit 10;
+
+/**
+ * Pick a random venue. What meetups has it held?
+ */
+MATCH (v:Venue)
+WHERE v.name is not null
+WITH collect(v) as venues
+WITH apoc.coll.randomItem(venues) as venue
+MATCH (venue)<-[:LOCATED_AT]-(e:Event)<-[:HELD]-(g:Group),
+ (e)-[:EVENT]-(r:RSVP)
+RETURN venue.name, venue.location, e.name, g.name, count(r) as RSVPs
+LIMIT 10;
+
+/**
+ * Pick some random venues and find the shortest path between
+ * them by topics.
+ */
+MATCH (v:Venue)
+WHERE v.name is not null
+WITH collect(v) as venues
+WITH apoc.coll.randomItem(venues) as v1,
+     apoc.coll.randomItem(venues) as v2
+MATCH p=shortestPath((v1)-[*]-(v2))
+RETURN p;
+
+/**
+ * Find shortest path between a triangle of three random members
+ */
+MATCH (m:Member)
+WITH collect(m) as members
+WITH apoc.coll.randomItem(members) as m1,
+     apoc.coll.randomItem(members) as m2,
+     apoc.coll.randomItem(members) as m3
+MATCH p1=shortestPath((m1)-[*]-(m2)),
+      p2=shortestPath((m2)-[*]-(m3)),
+      p3=shortestPath((m1)-[*]-(m3))
+RETURN p1, p2, p3;
+
+/**
+ * Find shortest path between two random topics.
+ */
+MATCH (t:Topic)
+WITH collect(t) as topics
+WITH apoc.coll.randomItem(topics) as t1,
+     apoc.coll.randomItem(topics) as t2
+MATCH p=shortestPath((t1)-[*]-(t2))
+RETURN p;
+
 /* 
  * Future Richmond Meetups within 10 miles of downtown
  */
