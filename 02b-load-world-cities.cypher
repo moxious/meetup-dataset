@@ -18,7 +18,7 @@ MERGE (c:City {
         latitude: toFloat(coalesce(line.lat, '0.0')),
         longitude: toFloat(coalesce(line.lng, '0.0'))
     }),
-    population: coalesce(line.population, 0)
+    population: coalesce(toInt(coalesce(line.population, 0)), 0)
 })
 
 MERGE (c)-[:IN]->(country);
