@@ -1,13 +1,9 @@
 #!/bin/bash
 
-TAG=$(head -c 3 /dev/urandom | md5 | head -c 5)
-LOG=log-benchmark-$TAG.log
-
-echo "Benchmark $TAG starting, logging to $LOG"
-echo "====================================================" | tee $LOG
-echo "== BENCHMARK $TAG $1" | tee $LOG
-echo "== START: " $(date) | tee $LOG
-echo "====================================================" | tee $LOG
+echo "====================================================" 
+echo "== MEETUP BENCHMARK"
+echo "== START: " $(date)
+echo "====================================================" 
 
 if [ -z $2 ] ; then 
    echo "Usage: ./benchmark.sh bolt+routing://host:7687 Neo4jPassword"
@@ -22,37 +18,75 @@ fi
 export NEO4J_URI=$1
 export NEO4J_PASSWORD=$2
 export NEO4J_USERNAME=neo4j
+SEGMENT_FILE=segment-files-subset.txt
+
+TAG=$(head -c 3 /dev/urandom | md5 | head -c 5)
 
 STARTTIME=$(date +%s)
 
-echo "Index phase" | tee $LOG
-cat 01-index.cypher | cypher-shell -a $NEO4J_URI >>$LOG
-echo "Load phase" | tee $LOG
-./load-all.sh segment-files-subset.txt >>$LOG
-echo "Cities phase" | tee $LOG
-cat 02b-load-world-cities.cypher | cypher-shell -a $NEO4J_URI >>$LOG
-echo "Link groups phase" | tee $LOG
-cat 03a-link-groups-to-countries.cypher | cypher-shell -a $NEO4J_URI >>$LOG
-echo "Link venues phase" | tee $LOG
-cat 03b-link-venues-to-cities.cypher | cypher-shell -a $NEO4J_URI >>$LOG
+# We will add the exit code of all sub-processes
+# If they're all zero, we exit good.  Otherwise
+# we exit non-zero error.
+OVERALL_EXIT_CODE=0
 
-for q in `seq 1 5` ; do 
-    echo "Queryload $q phase" | tee $LOG
-    for i in `seq 1 10` ; do 
-        cat benchmark/q$q >> queryload-$TAG-$q.cypher
-    done
+echo "Index phase" 
+START_INDEX=$(date +%s)
+cat 01-index.cypher | cypher-shell -a $NEO4J_URI
+OVERALL_EXIT_CODE=$(($OVERALL_EXIT_CODE + $?))
+END_INDEX=$(date +%s)
+ELAPSED_INDEX=$(($END_INDEX - $START_INDEX))
 
-    cat queryload-$TAG-$q.cypher | cypher-shell -a $NEO4J_URI >>$LOG
-done
+echo "Load phase" 
+START_LOAD=$(date +%s)
+./load-all.sh $SEGMENT_FILE
+OVERALL_EXIT_CODE=$(($OVERALL_EXIT_CODE + $?))
+END_LOAD=$(date +%s)
+ELAPSED_LOAD=$(($END_LOAD - $START_LOAD))
+
+echo "Cities phase" 
+START_CITIES=$(date +%s)
+cat 02b-load-world-cities.cypher | cypher-shell -a $NEO4J_URI
+OVERALL_EXIT_CODE=$(($OVERALL_EXIT_CODE + $?))
+END_CITIES=$(date +%s)
+ELAPSED_CITIES=$(($END_CITIES - $START_CITIES))
+
+echo "Link groups phase"
+START_LINK=$(date +%s)
+cat 03a-link-groups-to-countries.cypher | cypher-shell -a $NEO4J_URI
+OVERALL_EXIT_CODE=$(($OVERALL_EXIT_CODE + $?))
+echo "Link venues phase" 
+cat 03b-link-venues-to-cities.cypher | cypher-shell -a $NEO4J_URI 
+OVERALL_EXIT_CODE=$(($OVERALL_EXIT_CODE + $?))
+END_LINK=$(date +%s)
+ELAPSED_LINK=$(($END_LINK - $START_LINK))
+
+echo BENCHMARK_SETTING_TIME_RESOLUTION=seconds
+echo BENCHMARK_SETTING_QUERIES=$queries
+echo BENCHMARK_SETTING_RUNTIMES=$runtimes
+echo BENCHMARK_SETTING_SEGMENTS=`wc -l "$SEGMENT_FILE" | awk '{print $1}'`
+echo BENCHMARK_SETTING_TAG=$TAG
+echo BENCHMARK_SETTING_NEO4J_URI=$NEO4J_URI
+
 ENDTIME=$(date +%s)
 ELAPSED=$(($ENDTIME - $STARTTIME))
-echo "BENCHMARK ELAPSED TIME IN SECONDS: " $ELAPSED | tee $LOG
+echo "BENCHMARK ELAPSED TIME IN SECONDS: " $ELAPSED
+
+NODES=$(echo 'MATCH (n) RETURN count(n) as val;' | cypher-shell -a $NEO4J_URI --format plain | tail -n 1)
+EDGES=$(echo 'MATCH (n)-[r]->(m) RETURN count(r) as val;' | cypher-shell -a $NEO4J_URI --format plain | tail -n 1)
 
 rm -f queryload-$TAG-*.cypher
-echo "Done" | tee $LOG
+echo "Done"
 
-echo "====================================================" >>$LOG
-echo "== BENCHMARK $TAG $1" | tee >>$LOG
-echo "== FINISH: " $(date) | tee >>$LOG
-echo "====================================================" >>$LOG
-echo "Benchmark $TAG complete with $ELAPSED elapsed; logging to $LOG" | tee $LOG
+echo "====================================================" 
+echo "== BENCHMARK $TAG $1"
+echo "== FINISH: " $(date)
+echo "===================================================="
+echo "Benchmark $TAG complete with $ELAPSED elapsed"
+echo BENCHMARK_NODE_COUNT=$NODES
+echo BENCHMARK_EDGE_COUNT=$EDGES
+echo "BENCHMARK_ELAPSED=$ELAPSED"
+echo "BENCHMARK_LINK=$ELAPSED_LINK"
+echo "BENCHMARK_LOAD=$ELAPSED_LOAD"
+echo "BENCHMARK_CITIES=$ELAPSED_CITIES"
+echo "BENCHMARK_INDEX=$ELAPSED_INDEX"
+exit $OVERALL_EXIT_CODE
