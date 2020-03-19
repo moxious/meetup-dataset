@@ -74,7 +74,6 @@ echo "BENCHMARK ELAPSED TIME IN SECONDS: " $ELAPSED
 NODES=$(echo 'MATCH (n) RETURN count(n) as val;' | cypher-shell -a $NEO4J_URI --format plain | tail -n 1)
 EDGES=$(echo 'MATCH (n)-[r]->(m) RETURN count(r) as val;' | cypher-shell -a $NEO4J_URI --format plain | tail -n 1)
 
-rm -f queryload-$TAG-*.cypher
 echo "Done"
 
 echo "====================================================" 
@@ -82,8 +81,8 @@ echo "== BENCHMARK $TAG $1"
 echo "== FINISH: " $(date)
 echo "===================================================="
 echo "Benchmark $TAG complete with $ELAPSED elapsed"
-echo BENCHMARK_NODE_COUNT=$NODES
-echo BENCHMARK_EDGE_COUNT=$EDGES
+echo "BENCHMARK_NODE_COUNT=$NODES"
+echo "BENCHMARK_EDGE_COUNT=$EDGES"
 echo "BENCHMARK_ELAPSED=$ELAPSED"
 echo "BENCHMARK_LINK=$ELAPSED_LINK"
 echo "BENCHMARK_LOAD=$ELAPSED_LOAD"
