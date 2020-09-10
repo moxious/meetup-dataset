@@ -28,7 +28,7 @@ This creates a series of batched load files, called `segments/mybatchxaa`, `segm
 ## Prepping the database
 
 * Create a fresh database
-* Install APOC, and set `apoc.file.import.enabled=true`
+* Install APOC, and set `apoc.import.file.enabled=true`
 * Create indexes: `cat 01-index.cypher | cypher-shell -a localhost -u neo4j -p secret`
 * Load segments: `./load-all.sh`
 
